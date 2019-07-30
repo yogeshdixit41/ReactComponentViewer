@@ -6,23 +6,35 @@ import ComponentList from './ComponentList';
 
 let fileReader;
 let componentArray = [];
-const MyVisitor = {
-  JSXOpeningElement(path) {
-    componentArray.push(path.node.name.name);
-  }
-};
+let importArray = {};
+let impo = [];
+
 class App extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      components: []
+      components: [],
+      imports: {}
     };
+    this.MyVisitor = {
+     JSXOpeningElement(path) {
+       componentArray.push(path.node.name.name);
+     },
+     ImportDeclaration(path) {
+       //console.log('import name---' +JSON.stringify(path.node.specifiers[0].local.name));
+       var cmpName = path.node.specifiers[0].local.name;
+       var cmpPath = path.node.source.value;
+       importArray[cmpName] = cmpPath;
+     }
+   };
   }
 
   handleChange = (event) => {
     const fileChosen = event.target.files[0];
     if (this.validateFileType(fileChosen.type)) {
+      componentArray = [];
+      importArray = {};
       fileReader = new FileReader();
       fileReader.onloadend = this.parseFile;
       fileReader.readAsText(fileChosen);
@@ -40,18 +52,9 @@ class App extends React.Component {
   parseFile = (e) => {
     const content = fileReader.result;
     const ast = babelParser.parse(content, {sourceType:'module', allowImportExportEverywhere:true, plugins:['jsx', 'classProperties']});
-    traverse(ast, MyVisitor);
-    //let listOfAllComponents = [...new Set(componentArray)];
-    this.setState({components: [...new Set(componentArray)]});
-    /*traverse(ast, {
-      enter(path) {
-        if (path.node.type === "ReturnStatement" &&
-            path.node.argument.type === "JSXElement") {
-            console.log(path.node.type);
-            console.log(path.node.argument.children);
-        }
-      }
-    });*/
+    traverse(ast, this.MyVisitor);
+    let compSet = [...new Set(componentArray)];
+    this.setState({components: compSet, imports: importArray});
   }
 
   render() {

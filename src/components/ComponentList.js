@@ -46,7 +46,6 @@ class ComponentList extends React.Component {
   render () {
     const {classes} = this.props;
     const componentList = this.props.componentList;
-    console.log('comp list: ' + componentList);
     return (
       <DispComponents
         compList={componentList}
